@@ -10,8 +10,20 @@ class z0Container():
             scale = 1.0,
             size = self.shape
         )
+    
+    def antithetic(self, get=False):
+        for i, trial in enumerate(self.container):
+            for j, simPath in enumerate(self.container[i]):
+                halfPoint = int(self.shape[2]/2) + 1
+                firstHalf = simPath[:halfPoint]
+                secondHalf = firstHalf * (-1)
+                temp = np.concatenate([firstHalf, secondHalf], axis = 0)
+                self.container[i][j] = temp[:self.shape[2]]
+        if get:
+            return self.container
 
     def invCholesky(self, get=False):
+        self.antithetic()
         for i, trial in enumerate(self.container):
             for j, simPath in enumerate(self.container[i]):
                 cov = np.cov(simPath, rowvar=False)
@@ -29,7 +41,7 @@ class z0Container():
         self.invCholesky(get= False)
     
 
-class multiVariateSim():
+class pathSim():
     def __init__(self, S0Arr, riskFreeRate, timePeriod, timePartitionCnt, qArr, sigmaArr, corrMatrx, simCnt, repeatCnt):
         self.lnS0Arr = np.log(np.array(S0Arr))
         self.assetCnt = self.lnS0Arr.shape[0]
@@ -43,11 +55,8 @@ class multiVariateSim():
         self.repeatCnt = repeatCnt
         self.covMtrx = self.corrMtrx * np.tensordot(self.sigmaArr.reshape(1, -1), self.sigmaArr.reshape(1, -1), axes=(0,0)) 
 
-        self.Z0 = np.random.normal(
-            loc= 0.0,
-            scale= 1.0,
-            size= (self.repeatCnt, self.simCnt, self.timePartitionCnt - 1, self.assetCnt)
-        )
+        self.Z0Container = z0Container([self.repeatCnt, self.simCnt, self.timePartitionCnt - 1, self.assetCnt], varCntAxis= 3)
+        self.Z0 = self.Z0Container.invCholesky(get= True)
 
         self.returnSeries = np.zeros_like(self.Z0)
 

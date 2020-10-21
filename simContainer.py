@@ -1,5 +1,33 @@
 import numpy as np
-from scipy.linalg import cholesky
+from scipy.linalg import cholesky, inv
+
+class z0Container():
+    def __init__(self, shape, varCntAxis):
+        self.shape = shape
+        self.varCntAxis = varCntAxis
+        self.container = np.random.normal(
+            loc = 0.0,
+            scale = 1.0,
+            size = self.shape
+        )
+
+    def invCholesky(self, get=False):
+        for i, trial in enumerate(self.container):
+            for j, simPath in enumerate(self.container[i]):
+                cov = np.cov(simPath, rowvar=False)
+                covUtriInv = inv(cholesky(cov, lower=False))
+                self.container[i][j] = simPath.dot(covUtriInv)
+        if get:
+            return self.container
+
+    def reset(self):
+        self.container = np.random.normal(
+            loc = 0.0,
+            scale = 1.0,
+            size = self.shape
+        )
+        self.invCholesky(get= False)
+    
 
 class multiVariateSim():
     def __init__(self, S0Arr, riskFreeRate, timePeriod, timePartitionCnt, qArr, sigmaArr, corrMatrx, simCnt, repeatCnt):

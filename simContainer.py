@@ -14,7 +14,7 @@ class z0Container():
     def antithetic(self, get=False):
         for i, trial in enumerate(self.container):
             for j, simPath in enumerate(self.container[i]):
-                halfPoint = int(self.shape[2]/2) + 1
+                halfPoint = int(self.shape[2]/2)
                 firstHalf = simPath[:halfPoint]
                 secondHalf = firstHalf * (-1)
                 temp = np.concatenate([firstHalf, secondHalf], axis = 0)
@@ -55,7 +55,7 @@ class pathSim():
         self.repeatCnt = repeatCnt
         self.covMtrx = self.corrMtrx * np.tensordot(self.sigmaArr.reshape(1, -1), self.sigmaArr.reshape(1, -1), axes=(0,0)) 
 
-        self.Z0Container = z0Container([self.repeatCnt, self.simCnt, self.timePartitionCnt - 1, self.assetCnt], varCntAxis= 3)
+        self.Z0Container = z0Container([self.repeatCnt, self.simCnt, self.timePartitionCnt, self.assetCnt], varCntAxis= 3)
         self.Z0 = self.Z0Container.invCholesky(get= True)
 
         self.returnSeries = np.zeros_like(self.Z0)
@@ -82,5 +82,19 @@ class pathSim():
         self.lnStSeries = self.lnStSeries.cumsum(axis= 2)
         self.stSeries = np.exp(self.lnStSeries)
 
+class quantoFutureSim():
+    def __init__(self, S0Arr, riskFreeRate, timePeriod, timePartitionCnt, qArr, sigmaArr, corrMatrx, simCnt, repeatCnt):
+        self.lnS0Arr = np.log(np.array(S0Arr))
+        self.assetCnt = self.lnS0Arr.shape[0]
+        self.riskFreeRate = riskFreeRate
+        self.timePeriod = timePeriod
+        self.timePartitionCnt = timePartitionCnt
+        self.qArr = np.array(qArr)
+        self.sigmaArr = np.array(sigmaArr)
+        self.corrMtrx = np.array(corrMatrx)
+        self.simCnt = simCnt
+        self.repeatCnt = repeatCnt
+        self.covMtrx = self.corrMtrx * np.tensordot(self.sigmaArr.reshape(1, -1), self.sigmaArr.reshape(1, -1), axes=(0,0)) 
 
 
+        self.pathSimulator = pathSim()

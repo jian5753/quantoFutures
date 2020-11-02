@@ -3,3 +3,5 @@
 /qfVenv/
 /jpnbTest
 .DS_Store
+*.ipynb_checkpoints
+

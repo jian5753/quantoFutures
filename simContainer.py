@@ -11,19 +11,14 @@ class z0Container():
             size = self.shape
         )
     
-    def antithetic(self, get=False):
-        for i, trial in enumerate(self.container):
-            for j, simPath in enumerate(self.container[i]):
-                halfPoint = int(self.shape[2]/2)
-                firstHalf = simPath[:halfPoint]
-                secondHalf = firstHalf * (-1)
-                temp = np.concatenate([firstHalf, secondHalf], axis = 0)
-                self.container[i][j] = temp[:self.shape[2]]
+    def meanMatch(self, get=False):
+        tempMean = self.container.mean(axis = 2).reshape(self.shape[0], self.shape[1], 1, self.shape[3])
+        self.container -= tempMean
         if get:
             return self.container
 
     def invCholesky(self, get=False):
-        self.antithetic()
+        self.meanMatch()
         for i, trial in enumerate(self.container):
             for j, simPath in enumerate(self.container[i]):
                 cov = np.cov(simPath, rowvar=False)
@@ -53,15 +48,18 @@ class pathSim():
         self.corrMtrx = np.array(corrMatrx)
         self.simCnt = simCnt
         self.repeatCnt = repeatCnt
-        self.covMtrx = self.corrMtrx * np.tensordot(self.sigmaArr.reshape(1, -1), self.sigmaArr.reshape(1, -1), axes=(0,0)) 
 
+        # compute the distribution parameter of return in each delta_t period
+        self.delta_t = self.timePeriod / self.timePartitionCnt
+        self.mu_delta_t_return = (self.riskFreeRate - self.qArr - np.power(self.sigmaArr, 2) / 2) * (self.delta_t)
+        self.sigma_delta_t_return = (self.sigmaArr * np.power(self.delta_t, 0.5))
+        self.covMtrx = self.corrMtrx * np.tensordot(self.sigma_delta_t_return.reshape(1, -1), self.sigma_delta_t_return.reshape(1, -1), axes=(0,0)) 
+
+        # draw from Z
         self.Z0Container = z0Container([self.repeatCnt, self.simCnt, self.timePartitionCnt, self.assetCnt], varCntAxis= 3)
-        self.Z0 = self.Z0Container.invCholesky(get= True)
+        self.Z0 = self.Z0Container.meanMatch(get= True)
 
         self.returnSeries = np.zeros_like(self.Z0)
-
-        self.mu_delta_t_return = (self.riskFreeRate - self.qArr - np.power(self.sigmaArr, 2) / 2) * (self.timePeriod / self.timePartitionCnt)
-
 
     def var_cov(self):
         utri = cholesky(self.covMtrx)

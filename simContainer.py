@@ -37,10 +37,11 @@ class z0Container():
     
 
 class pathSim():
-    def __init__(self, S0Arr, riskFreeRate, timePeriod, timePartitionCnt, qArr, sigmaArr, corrMatrx, simCnt, repeatCnt):
+    def __init__(self, S0Arr, muArr, timePeriod, timePartitionCnt, qArr, sigmaArr, corrMatrx, simCnt, repeatCnt):
         self.lnS0Arr = np.log(np.array(S0Arr))
+        self.muArr = np.array(muArr)
         self.assetCnt = self.lnS0Arr.shape[0]
-        self.riskFreeRate = riskFreeRate
+        self.riskFreeRate = self.muArr[0] - np.power(self.muArr[0], 2) / 2
         self.timePeriod = timePeriod
         self.timePartitionCnt = timePartitionCnt
         self.qArr = np.array(qArr)
@@ -51,7 +52,7 @@ class pathSim():
 
         # compute the distribution parameter of return in each delta_t period
         self.delta_t = self.timePeriod / self.timePartitionCnt
-        self.mu_delta_t_return = (self.riskFreeRate - self.qArr - np.power(self.sigmaArr, 2) / 2) * (self.delta_t)
+        self.mu_delta_t_return = (self.muArr - np.power(self.sigmaArr, 2) / 2) * (self.delta_t)
         self.sigma_delta_t_return = (self.sigmaArr * np.power(self.delta_t, 0.5))
         self.covMtrx = self.corrMtrx * np.tensordot(self.sigma_delta_t_return.reshape(1, -1), self.sigma_delta_t_return.reshape(1, -1), axes=(0,0)) 
 
